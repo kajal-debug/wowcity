@@ -1,3 +1,23 @@
+// import * as THREE from 'three';
+// import {FBXLoader} from './jsm/FBXLoader.js';
+// // import {GLTFLoader} from './jsm/GLTFLoader.js';
+// import Stats from './jsm/libs/stats.module.js'
+// // import {GUI} from 'dat.gui';
+// // import dat from "https://cdn.skypack.dev/dat.gui";
+// import * as CANNON from 'cannon';
+// // import * as CANNON from 'cannon-es';
+
+console.log(CANNON);
+
+let stats;
+let world, sphereShape, sphereBody;
+let floor, floorShape, floorBody;
+let oldET = 0;
+
+let light;
+
+// let composer;
+
 class Game {
   constructor() {
     if (!Detector.webgl) Detector.addGetWebGLMessage();
@@ -25,11 +45,6 @@ class Game {
     this.remoteColliders = [];
     this.initialisingPlayers = [];
     this.remoteData = [];
-
-	// cannon init
-	// this.physicsWorld = new cancelAnimationFrame.World({
-	// 	gravity: new CANNON.Vector3(0, -9.82, 0),
-	// });
 
     this.messages = {
       text: ["Welcome to WoWCity", "by WoWExp"],
@@ -70,7 +85,7 @@ class Game {
     this.anims.forEach(function (anim) {
       options.assets.push(`${game.assetsPath}fbx/anims/${anim}.fbx`);
     });
-    options.assets.push(`${game.assetsPath}glb/wowcity.fbx`);
+    options.assets.push(`${game.assetsPath}glb/wowcity.glb`);
 
     this.mode = this.modes.PRELOAD;
 
@@ -113,40 +128,40 @@ class Game {
 
     this.scene = new THREE.Scene();
 
-	this.scene.add(new THREE.AxesHelper(100000));
+	  // this.scene.add(new THREE.AxesHelper(100000));
 
     this.scene.background = new THREE.Color(0x00a0f0);
 
-    const ambient = new THREE.AmbientLight(0xaaaaaa);
+    const ambient = new THREE.AmbientLight(0xaaaaaa, 1);
     this.scene.add(ambient);
 
-    const light = new THREE.DirectionalLight(0xaaaaaa);
-    light.position.set(300, 3000, 300);
-    light.target.position.set(0, 0, 0);
+    light = new THREE.DirectionalLight(0xaaaaaa, 1);
+    light.position.set(0, 2200, 0);
+    // light.target.position.set(0, 1600, 0);
 
-    light.castShadow = true;
+    // light.castShadow = true;
 
-    const lightSize = 1000;
-    light.shadow.camera.near = 1;
-    light.shadow.camera.far = 500;
-    light.shadow.camera.left = light.shadow.camera.bottom = -lightSize;
-    light.shadow.camera.right = light.shadow.camera.top = lightSize;
+    // const lightSize = 1000;
+    // light.shadow.camera.near = 1;
+    // light.shadow.camera.far = 1000;
+    // light.shadow.camera.left = light.shadow.camera.bottom = -lightSize;
+    // light.shadow.camera.right = light.shadow.camera.top = lightSize;
 
-    light.shadow.bias = 0.0039;
-    light.shadow.mapSize.width = 1024;
-    light.shadow.mapSize.height = 1024;
+    // light.shadow.bias = 0.0039;
+    // light.shadow.mapSize.width = 1024;
+    // light.shadow.mapSize.height = 1024;
 
     this.sun = light;
-    // this.scene.add(light);
+    this.scene.add(light);
 
     // model
-    const loader = new THREE.FBXLoader();
-    // const loader = new THREE.GLTFLoader();
+    // const loader = new THREE.FBXLoader();
+    const gltfLoader = new THREE.GLTFLoader();
     const game = this;
 
     this.player = new PlayerLocal(this);
 
-    this.loadEnvironment(loader);
+    this.loadEnvironment(gltfLoader);
 
     this.speechBubble = new SpeechBubble(this, "", 150);
     this.speechBubble.mesh.position.set(0, 350, 0);
@@ -161,6 +176,16 @@ class Game {
     this.renderer.setSize(window.innerWidth, window.innerHeight);
     this.renderer.shadowMap.enabled = true;
     this.container.appendChild(this.renderer.domElement);
+
+    // composer = new POSTPROCESSING.EffectComposer(this.renderer);
+    // composer.addPass(new POSTPROCESSING.RenderPass(this.scene, this.camera));
+
+    // const effectPass = new POSTPROCESSING.EffectPass(
+    //   this.camera,
+    //   new POSTPROCESSING.BloomEffect()
+    //   );
+    //   effectPass.renderToScreen = true;
+    //   composer.addPass(effectPass);
 
     if ("ontouchstart" in window) {
       window.addEventListener(
@@ -177,26 +202,71 @@ class Game {
     }
 
     window.addEventListener("resize", () => game.onWindowResize(), false);
+
+    stats = Stats();
+    document.body.appendChild(stats.dom);
+
+    /* PHYSICS INIT */
+
+    // cannon init - v1
+
+    // this.physicsWorld = new cancelAnimationFrame.World({
+    // 	gravity: new CANNON.Vector3(0, -9.82, 0),
+    // });
+
+    // cannon init - v2
+
+    // world
+    world = new CANNON.World();
+    world.gravity.set(0, -9.8, 0);
+
+    // player sphere
+    sphereShape = new CANNON.Cylinder(15, 15, 20, 100);
+    sphereBody = new CANNON.Body({
+      mass: 0,
+      position: new CANNON.Vec3(2200, 0, 500),
+      shape: sphereShape
+    });
+    // console.log(sphereBody.position);
+
+    world.addBody(sphereBody);
+
+    floorShape = new CANNON.Plane();
+    floorBody = new CANNON.Body({
+      mass: 0,
+      shape: floorShape
+    });
+    // floorBody.addShape(new CANNON.Sphere);
+    floorBody.quaternion.setFromAxisAngle(
+      new CANNON.Vec3(1, 0, 0),
+      -Math.PI * 0.5
+    );
+
+    world.addBody(floorBody);
+    console.log(floorBody);
   }
 
   loadEnvironment(loader) {
     const game = this;
-    loader.load(`${this.assetsPath}glb/wowcity.fbx`, function (object) {
-      game.environment = object;
+    loader.load(`${this.assetsPath}glb/wowcity.glb`, function (object) {
+      game.environment = object.scene;
+
       game.colliders = [];
-      object.scale.set(1, 1, 1);
-      object.position.set(0, 1600, 0);
-      game.scene.add(object);
-      object.traverse(function (child) {
+      // console.log(object);
+      object.scene.scale.set(100, 100, 100);
+      object.scene.position.set(0, 1600, 0);
+      game.scene.add(object.scene);
+      
+      object.scene.traverse(function (child) {
         if (child.isMesh) {
-          if (child.name.startsWith("proxy")) {
+          // if (child.name.startsWith("proxy")) {
             game.colliders.push(child);
-            console.log(game.colliders);
-            child.material.visible = false;
-          } else {
+            // console.log(game.colliders);
+            // child.material.visible = false;
+          // } else {
             child.castShadow = true;
-            child.receiveShadow = true;
-          }
+            // child.receiveShadow = true;
+          // }
         }
       });
 
@@ -214,14 +284,21 @@ class Game {
 
       game.scene.background = textureCube;
 
-      game.loadNextAnim(loader);
+      floor = game.scene.getObjectByName("road");
+      // floor.rotation.x = -Math.PI * 0.5;
+      // floor.receiveShadow = true;
+      console.log(floor);
+
+      const fbxLoader = new THREE.FBXLoader();
+
+      game.loadNextAnim(fbxLoader);
     });
   }
 
   loadNextAnim(loader) {
     let anim = this.anims.pop();
     const game = this;
-    // const fbxloader = new THREE.FBXLoader();
+    // const fbxloader = new FBXLoader();
     loader.load(
       `${this.assetsPath}fbx/anims/${anim}.fbx`,
       function (object) {
@@ -446,6 +523,24 @@ class Game {
     const game = this;
     const dt = this.clock.getDelta();
 
+    const ET = this.clock.getElapsedTime();
+    const deltaTime = ET - oldET;
+    oldET = ET;
+
+    // console.log(deltaTime);
+
+    world.step(1/60, deltaTime, 3);
+    // console.log(sphereBody.position.y);
+
+    floor.position.copy(floorBody.position);
+    // console.log(floorBody.position);
+    this.player.object.position.copy(sphereBody.position);
+    // console.log(sphereBody.position);
+
+    // console.log(light.position);
+
+    // composer.render();
+
     requestAnimationFrame(function () {
       game.animate();
     });
@@ -475,6 +570,7 @@ class Game {
         0.05
       );
       const pos = this.player.object.position.clone();
+      sphereBody.position.copy(this.player.object.position);
       if (this.cameras.active == this.cameras.chat) {
         pos.y += 200;
       } else {
@@ -492,6 +588,8 @@ class Game {
       this.speechBubble.show(this.camera.position);
 
     this.renderer.render(this.scene, this.camera);
+
+    stats.update();
   }
 }
 

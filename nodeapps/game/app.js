@@ -5,6 +5,7 @@ const io = require('socket.io')(http);
 
 app.use(express.static('../../public_html/game/'));
 app.use(express.static('../../public_html/libs'));
+app.use('/build/', express.static('../../node_modules/three/build'));
 app.get('/',function(req, res) {
     res.sendFile(__dirname + '../../public_html/game/index.html');
 });

@@ -133,25 +133,40 @@
 		</div>
 	</div> -->
 
+	<!-- <script type="importmap">
+		{
+			"imports": {
+				"three": "./build/three.module.js",
+				"cannon": "./build/cannon.js"
+			}
+		}
+	</script> -->
+	
 	<script src="/socket.io/socket.io.js"></script>
 	<script src="https://webrtc.github.io/adapter/adapter-latest.js"></script>
 	<!-- <script src="libs/rtc.js"></script> -->
 
+	<!-- <script type="module" src="./jsm/three.module.js"></script> -->
 	<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/92/three.min.js"></script>
 	<script src="https://code.jquery.com/jquery-1.11.1.js"></script>
 	<!-- <script src="/socket.io/socket.io.js"></script> -->
 
-	<!-- <script src="libs/stats.min.js"></script> -->
+	<script src="libs/stats.min.js"></script>
 	<!-- <script src="libs/stats-manager.js"></script> -->
 	<script src="libs/inflate.min.js"></script>
 	<script src="libs/FBXLoader.js"></script>
 	<script src="libs/GLTFLoader.js"></script>
+	<!-- <script src="libs/postprocessing.min.js"></script> -->
+	<!-- <script src="libs/EffectComposer.js"></script> -->
+
+	<script src="libs/cannon.js"></script>
 	
 	<script src="libs/Detector.js"></script>
 	<!-- joystick -->
 	<script src="libs/toon3d.js"></script>
 	<script src="game.js"></script>
 	<script>
+		// import Game from './game.js';
 		var game;
 		document.addEventListener("DOMContentLoaded", function () { game = new Game(); });
 	</script>
